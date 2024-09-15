@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+        .question {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .options {
+            list-style-type: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        .options li {
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .timer {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .result {
+            font-size: 22px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .correct {
+            color: green;
+            font-weight: bold;
+        }
+        .incorrect {
+            color: red;
+            font-weight: bold;
+        }
+        .tick::before {
+            content: '✔ ';
+            color: green;
+        }
+        .cross::before {
+            content: '✘ ';
+            color: red;
+        }
+        .attempted {
+            background-color: #e0ffe0;
+        }
+        .unattempted {
+            background-color: #ffe0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div id="quiz"></div>
+        <div class="timer" id="timer">Time left: <span id="time">20:00</span></div>
+        <button onclick="prevQuestion()">Previous</button>
+        <button onclick="nextQuestion()">Next</button>
+        <button id="submit-btn" onclick="submitQuiz()">Submit</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const questions = [
+    { question: "1. भारत के पहले प्रधानमंत्री ने किस वर्ष अपने पद की शपथ ली? / In which year did India's first Prime Minister take office?", options: ["1947", "1950", "1952", "1948"], answer: 0 },
+    { question: "2. भारत की पहली महिला राष्ट्रपति कौन थी? / Who was India's first female President?", options: ["सर्वपल्ली राधाकृष्णन", "डॉ. राजेंद्र प्रसाद", "डॉ. प्रतिभा पाटिल", "डॉ. सलीम"], answer: 2 },
+    { question: "3. 2020 में भारत ने कौन सा प्रमुख उपग्रह लॉन्च किया? / Which major satellite did India launch in 2020?", options: ["सारल-1", "जीसैट-30", "चंद्रयान-3", "मार्स ऑर्बिटर"], answer: 1 },
+    { question: "4. 2021 में भारत ने किस नए शांति समझौते पर हस्ताक्षर किए? / Which new peace agreement did India sign in 2021?", options: ["लद्दाख समझौता", "एनडीए समझौता", "एनआरसी समझौता", "आर्म्स ट्रीटी"], answer: 0 },
+    { question: "5. भारत का कौन सा राज्य 2020 में 'स्टार्टअप' के लिए सबसे अधिक प्रोत्साहित किया गया? / Which Indian state was most promoted for startups in 2020?", options: ["गुजरात", "महाराष्ट्र", "केरल", "बिहार"], answer: 1 },
+    { question: "6. भारतीय क्रिकेट टीम ने 2021 में किस टी-20 विश्व कप में जीत हासिल की? / Which T20 World Cup did the Indian cricket team win in 2021?", options: ["उपविजेता", "चैंपियन", "मौजूद नहीं", "सेमीफाइनल"], answer: 2 },
+    { question: "7. 2022 में भारतीय राष्ट्रपति के रूप में किसने शपथ ली? / Who took the oath as the President of India in 2022?", options: ["द्रौपदी मुर्मू", "रामनाथ कोविंद", "प्रणब मुखर्जी", "अब्दुल कलाम"], answer: 0 },
+    { question: "8. भारतीय संविधान में 2021 में किस नए संशोधन को जोड़ा गया? / Which new amendment was added to the Indian Constitution in 2021?", options: ["नागरिकता संशोधन", "फिस्कल जिम्मेदारी संशोधन", "युवाओं के अधिकार", "स्वास्थ्य और शिक्षा"], answer: 0 },
+    { question: "9. भारत ने 2020 में किस प्रमुख आर्थिक पैकेज की घोषणा की? / What major economic package did India announce in 2020?", options: ["आत्मनिर्भर भारत", "मेक इन इंडिया", "नमक सत्याग्रह", "सौभाग्य योजना"], answer: 0 },
+    { question: "10. 2021 में भारत का कौन सा राज्य भूस्खलन से प्रभावित हुआ? / Which Indian state was affected by landslides in 2021?", options: ["उत्तराखंड", "पंजाब", "राजस्थान", "उत्तर प्रदेश"], answer: 0 },
+    { question: "11. भारतीय रिजर्व बैंक ने 2022 में कौन सा प्रमुख सुधार लागू किया? / Which major reform did the Reserve Bank of India implement in 2022?", options: ["डिजिटल करेंसी", "इंटरेस्ट रेट बदलाव", "क्रेडिट गारंटी", "नए वित्तीय प्रोटोकॉल"], answer: 0 },
+    { question: "12. 2023 में भारतीय साहित्य में कौन सी प्रमुख किताब प्रकाशित हुई? / Which major book was published in Indian literature in 2023?", options: ["प्रकाश सिंह की आत्मकथा", "सत्याग्रह की दास्तान", "न्यू इंडिया", "गांधीजी के विचार"], answer: 2 },
+    { question: "13. 2021 में भारत ने किस विश्वस्तरीय जलवायु समझौते पर हस्ताक्षर किए? / Which international climate agreement did India sign in 2021?", options: ["पेरिस समझौता", "क्योटो प्रोटोकॉल", "डब्ल्यूटीओ समझौता", "मॉन्ट्रियल प्रोटोकॉल"], answer: 0 },
+    { question: "14. भारत ने 2021 में किस प्रमुख खेल टूर्नामेंट की मेज़बानी की? / Which major sports tournament did India host in 2021?", options: ["टी-20 वर्ल्ड कप", "ओलंपिक", "सैफ चैंपियनशिप", "कॉमनवेल्थ गेम्स"], answer: 0 },
+    { question: "15. 2022 में भारत ने कौन सा नया डिजिटल भुगतान प्लेटफॉर्म लॉन्च किया? / Which new digital payment platform did India launch in 2022?", options: ["UPI 2.0", "डिजिटल वॉलेट", "ई-रुपी", "क्रिप्टो करेंसी"], answer: 2 },
+    { question: "16. भारत ने 2020 में किस नए पर्यावरणीय कानून को लागू किया? / Which new environmental law did India implement in 2020?", options: ["प्राकृतिक संसाधन प्रबंधन", "जलवायु परिवर्तन कानून", "हवा गुणवत्ता प्रबंधन", "वन संरक्षण कानून"], answer: 0 },
+    { question: "17. 2023 में भारतीय उपमहाद्वीप में कौन सा बड़ा प्राकृतिक आपदा आया? / What major natural disaster occurred in the Indian subcontinent in 2023?", options: ["सुनामी", "भूकंप", "बाढ़", "सूखा"], answer: 2 },
+    { question: "18. भारतीय उपनिवेशों में से कौन सा उपनिवेश स्वतंत्र हुआ? / Which of the Indian colonies gained independence?", options: ["हैदराबाद", "गोवा", "कश्मीर", "सिक्किम"], answer: 1 },
+    { question: "19. 2021 में भारत ने किस प्रमुख स्वास्थ्य कार्यक्रम की शुरुआत की? / Which major health program did India start in 2021?", options: ["आयुष्मान भारत", "मिशन इंद्रधनुष", "स्वच्छ भारत अभियान", "सर्व शिक्षा अभियान"], answer: 0 },
+    { question: "20. 2022 में भारत ने किस प्रमुख अंतरिक्ष मिशन की योजना बनाई? / Which major space mission did India plan in 2022?", options: ["चंद्रयान-3", "मंगलयान", "आकाश मिशन", "जीसैट-35"], answer: 0 },
+    { question: "21. भारत की वर्तमान जनसंख्या क्या है? / What is the current population of India?", options: ["1.3 अरब", "1.2 अरब", "1.4 अरब", "1.5 अरब"], answer: 0 },
+    { question: "22. भारतीय स्वतंत्रता संग्राम के किस नेता ने ‘आजाद हिंद फौज’ की स्थापना की? / Which leader of the Indian independence struggle founded the ‘Azad Hind Fauj’?", options: ["सुभाष चंद्र बोस", "महात्मा गांधी", "जवाहरलाल नेहरू", "लाल बहादुर शास्त्री"], answer: 0 },
+    { question: "23. 2023 में भारत का कौन सा प्रमुख खेल आयोजन संपन्न हुआ? / Which major sports event in India concluded in 2023?", options: ["इंडियन प्रीमियर लीग", "सुपर बॉक्सिंग", "बैडमिंटन चैंपियनशिप", "फुटबॉल वर्ल्ड कप"], answer: 0 },
+    { question: "24. भारतीय उपमहाद्वीप में सबसे पहले किस शहर का निर्माण हुआ? / Which city was the first to be established in the Indian subcontinent?", options: ["मथुरा", "पाटलिपुत्र", "हड़प्पा", "मोहेंजो-दारो"], answer: 2 },
+    { question: "25. भारत में सबसे पहला रेलमार्ग कौन सा था? / What was the first railway line in India?", options: ["मुंबई से ठाणे", "दिल्ली से मेरठ", "कोलकाता से बर्धमान", "मद्रास से बंगलोर"], answer: 0 },
+    { question: "26. भारत की पहली महिला प्रधानमंत्री कौन थी? / Who was the first female Prime Minister of India?", options: ["इंदिरा गांधी", "सुषमा स्वराज", "ममता बनर्जी", "प्रियंका गांधी"], answer: 0 },
+    { question: "27. भारतीय संविधान को अपनाने की तिथि क्या है? / What is the date of adopting the Indian Constitution?", options: ["26 जनवरी 1950", "15 अगस्त 1947", "2 अक्टूबर 1948", "30 जनवरी 1950"], answer: 0 },
+    { question: "28. भारत की सबसे बड़ी नदी कौन सी है? / What is the largest river in India?", options: ["गंगा", "यमुना", "सरस्वती", "ब्रह्मपुत्र"], answer: 0 },
+    { question: "29. 2021 में भारत ने किस महत्वपूर्ण अंतरराष्ट्रीय खेल में जीत हासिल की? / In which significant international sport did India achieve victory in 2021?", options: ["हॉकी", "बैडमिंटन", "कबड्डी", "क्रिकेट"], answer: 3 },
+    { question: "30. भारत में सबसे पहला स्वदेशी अभियान कौन सा था? / What was the first indigenous campaign in India?", options: ["स्वदेशी आंदोलन", "सविनय अवज्ञा आंदोलन", "नमक सत्याग्रह", "भारत छोड़ो आंदोलन"], answer: 0 },
+    { question: "31. भारत के किस राज्य ने 2021 में प्रमुख जलवायु संकट का सामना किया? / Which Indian state faced a major climate crisis in 2021?", options: ["केरल", "महाराष्ट्र", "उत्तर प्रदेश", "पंजाब"], answer: 0 },
+    { question: "32. भारत के पहले प्रधानमंत्री की अध्यक्षता में किस वर्ष संविधान सभा की बैठक शुरू हुई? / In which year did the Constituent Assembly meetings begin under the first Prime Minister of India?", options: ["1946", "1950", "1947", "1948"], answer: 0 },
+    { question: "33. भारत के किस राजवंश ने कला और संस्कृति को प्रोत्साहित किया? / Which dynasty in India promoted art and culture?", options: ["गुप्त", "मौर्य", "चोल", "मुगल"], answer: 0 },
+    { question: "34. 2020 में भारत ने कौन सा प्रमुख अंतरराष्ट्रीय व्यापार समझौता किया? / Which major international trade agreement did India make in 2020?", options: ["आरसीईपी", "सार्क", "जीसीसी", "ईयू-भारत"], answer: 0 },
+    { question: "35. भारतीय उपमहाद्वीप के प्रमुख साहित्यिक पुरस्कार कौन से हैं? / What are the major literary awards in the Indian subcontinent?", options: ["जनेक्स अवार्ड", "साहित्य अकादमी पुरस्कार", "संगीत नाटक अकादमी पुरस्कार", "दादा साहेब फाल्के पुरस्कार"], answer: 1 },
+    { question: "36. भारत का कौन सा राज्य 2021 में महत्वपूर्ण तेल और गैस खोज की रिपोर्ट करता है? / Which Indian state reported a significant oil and gas discovery in 2021?", options: ["असम", "गुजरात", "कर्नाटक", "राजस्थान"], answer: 0 },
+    { question: "37. भारतीय स्वतंत्रता संग्राम के दौरान कौन सी प्रमुख महिला नेता प्रसिद्ध हुईं? / Which prominent female leader gained fame during the Indian independence struggle?", options: ["सुभद्राकुमारी चौहान", "सरोजिनी नायडू", "मैडम भीकाजी कामा", "साधना देवी"], answer: 1 },
+    { question: "38. भारत ने 2020 में किस प्रमुख आपातकालीन योजना की घोषणा की? / Which major emergency plan did India announce in 2020?", options: ["कोविड-19 राहत योजना", "प्राकृतिक आपदा प्रबंधन", "आर्थिक प्रोत्साहन पैकेज", "स्वास्थ्य सुरक्षा योजना"], answer: 0 },
+    { question: "39. भारत की किस प्रमुख नदी पर सबसे लंबा पुल है? / Which major river in India has the longest bridge?", options: ["ब्रह्मपुत्र", "गंगा", "यमुना", "सबरीमती"], answer: 0 },
+    { question: "40. भारत का कौन सा प्रमुख शहर 2022 में स्मार्ट सिटी पुरस्कार विजेता बना? / Which major city in India became a smart city award winner in 2022?", options: ["भोपाल", "शिमला", "सूरत", "बेंगलुरु"], answer: 2 },
+    { question: "41. भारत में 2021 में कौन सा नया डिजीटल बैंकिंग प्लेटफॉर्म लॉन्च हुआ? / Which new digital banking platform was launched in India in 2021?", options: ["जन्मभूमि", "नैशनल डिजिटल बैंक", "फिनटेक प्लेटफॉर्म", "पेटीएम बैंक"], answer: 0 },
+    { question: "42. भारतीय स्वतंत्रता संग्राम में कौन से प्रमुख आंदोलन में महिलाओं की प्रमुख भूमिका रही? / In which major movement of the Indian independence struggle did women play a key role?", options: ["भारत छोड़ो आंदोलन", "नमक सत्याग्रह", "असहयोग आंदोलन", "सविनय अवज्ञा आंदोलन"], answer: 1 },
+    { question: "43. भारत के किस राज्य ने 2022 में जलवायु परिवर्तन के लिए बड़ा निवेश किया? / Which Indian state made a significant investment in climate change in 2022?", options: ["केरल", "महाराष्ट्र", "गुजरात", "पंजाब"], answer: 2 },
+    { question: "44. भारत का कौन सा शहर 2021 में प्रमुख विज्ञान और प्रौद्योगिकी केंद्र के रूप में विकसित हुआ? / Which city in India developed as a major science and technology hub in 2021?", options: ["हैदराबाद", "बेंगलुरु", "मुंबई", "दिल्ली"], answer: 1 },
+    { question: "45. भारतीय संविधान के किस अनुच्छेद में मौलिक अधिकारों की सुरक्षा की गई है? / Which article of the Indian Constitution provides for the protection of fundamental rights?", options: ["अनुच्छेद 12", "अनुच्छेद 21", "अनुच्छेद 32", "अनुच्छेद 226"], answer: 1 },
+    { question: "46. भारत के किस राज्य में 2022 में महत्वपूर्ण ऐतिहासिक स्थल की खोज की गई? / In which Indian state was a significant historical site discovered in 2022?", options: ["उतराखंड", "मध्य प्रदेश", "राजस्थान", "पंजाब"], answer: 0 },
+    { question: "47. भारत की सबसे बड़ी बांध परियोजना कौन सी है? / What is the largest dam project in India?", options: ["भाखड़ा नांगल", "सरदार सरोवर", "विजय वॉली", "कुर्नूल"], answer: 1 },
+    { question: "48. भारतीय स्वतंत्रता संग्राम में कौन सा प्रमुख ऐतिहासिक व्यक्ति गांधीजी के समकालीन था? / Which major historical figure in the Indian independence struggle was a contemporary of Gandhi?", options: ["नेहरू", "सुभाष चंद्र बोस", "लाल बहादुर शास्त्री", "भगत सिंह"], answer: 1 },
+    { question: "49. भारत का कौन सा प्रमुख युद्ध स्वतंत्रता संग्राम से संबंधित था? / Which major war in India was related to the independence struggle?", options: ["सिपाही विद्रोह", "बंगाल का विभाजन", "कश्मीर का संघर्ष", "भारत-पाकिस्तान युद्ध"], answer: 0 },
+    { question: "50. भारतीय स्वतंत्रता संग्राम के दौरान कौन सा प्रमुख राष्ट्रीय ध्वज अपनाया गया था? / Which major national flag was adopted during the Indian independence struggle?", options: ["संतरी", "ट्राईकलर", "सौराष्ट्र", "राज्य ध्वज"], answer: 1 }
+];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let selectedAnswers = new Array(questions.length).fill(null);
+        let timeLeft = 1200; // 20 minutes in seconds
+        let timer;
+
+        // Load current question and options
+        function loadQuestion() {
+            if (currentQuestion < questions.length) {
+                const question = questions[currentQuestion];
+                const selected = selectedAnswers[currentQuestion];
+
+                document.getElementById('quiz').innerHTML = `
+                    <div class="question">${question.question}</div>
+                    <ul class="options">
+                        ${question.options.map((option, index) => `
+                            <li><label><input type="radio" name="option" value="${index}" ${selected === index ? 'checked' : ''}> ${option}</label></li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                showResult();
+            }
+        }
+
+        // Start timer for the quiz
+        function startTimer() {
+            clearInterval(timer);
+            document.getElementById('time').textContent = formatTime(timeLeft);
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time').textContent = formatTime(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    showResult();
+                }
+            }, 1000);
+        }
+
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        // Move to the next question
+        function nextQuestion() {
+            saveSelectedAnswer();
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                loadQuestion();
+            }
+        }
+
+        // Move to the previous question
+        function prevQuestion() {
+            saveSelectedAnswer();
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                loadQuestion();
+            }
+        }
+
+        // Save selected answer
+        function saveSelectedAnswer() {
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            selectedAnswers[currentQuestion] = selectedOption ? parseInt(selectedOption.value) : null;
+        }
+
+        // Submit quiz and show the result
+        function submitQuiz() {
+            saveSelectedAnswer();
+            clearInterval(timer);
+            showResult();
+            document.querySelector('button[onclick="nextQuestion()"]').style.display = 'none';
+            document.querySelector('button[onclick="prevQuestion()"]').style.display = 'none';
+            document.getElementById('submit-btn').style.display = 'none';
+        }
+
+        // Display the final result
+        function showResult() {
+            let attemptedCount = selectedAnswers.filter(answer => answer !== null).length;
+            score = selectedAnswers.filter((answer, index) => answer === questions[index].answer).length;
+
+            document.getElementById('quiz').innerHTML = '';
+            document.getElementById('timer').style.display = 'none';
+
+            let resultHTML = `You scored ${score} out of ${questions.length}<br>`;
+            resultHTML += `Questions Attempted: ${attemptedCount} out of ${questions.length}<br><br>`;
+            questions.forEach((q, index) => {
+                const isAttempted = selectedAnswers[index] !== null;
+                const className = isAttempted ? 'attempted' : 'unattempted';
+                resultHTML += `<div class="question ${className}">Q${index + 1}: ${q.question}</div><ul class="options">`;
+                q.options.forEach((option, optionIndex) => {
+                    let classOption = '';
+                    if (optionIndex === q.answer) {
+                        classOption = 'correct tick';
+                    } else if (selectedAnswers[index] === optionIndex) {
+                        classOption = 'incorrect cross';
+                    }
+                    resultHTML += `<li class="${classOption}">${option}</li>`;
+                });
+                resultHTML += `</ul><br>`;
+            });
+            document.getElementById('result').innerHTML = resultHTML;
+        }
+
+        // Initialize quiz and timer
+        loadQuestion();
+        startTimer();
+    </script>
+</body>
+</html>
